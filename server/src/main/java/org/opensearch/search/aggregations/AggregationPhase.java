@@ -38,6 +38,7 @@ import org.opensearch.common.inject.Inject;
 import org.opensearch.common.lucene.search.Queries;
 import org.opensearch.search.aggregations.bucket.global.GlobalAggregator;
 import org.opensearch.search.internal.SearchContext;
+import org.opensearch.search.profile.aggregation.ProfilingAggregator;
 import org.opensearch.search.profile.query.CollectorResult;
 import org.opensearch.search.profile.query.InternalProfileCollector;
 import org.opensearch.search.query.QueryPhaseExecutionException;
@@ -61,17 +62,20 @@ public class AggregationPhase {
 
     public void preProcess(SearchContext context) {
         if (context.aggregations() != null) {
-            List<Aggregator> collectors = new ArrayList<>();
-            Aggregator[] aggregators;
             try {
                 AggregatorFactories factories = context.aggregations().factories();
-                aggregators = factories.createTopLevelAggregators(context);
-                for (int i = 0; i < aggregators.length; i++) {
-                    if (aggregators[i] instanceof GlobalAggregator == false) {
-                        collectors.add(aggregators[i]);
+                List<Aggregator> aggregators = factories.createTopLevelAggregators(context);
+                List<Aggregator> collectors = new ArrayList<>();
+                List<Aggregator> globals = new ArrayList<>();
+                for (Aggregator aggregator : aggregators) {
+                    if (isGlobalAggregator(aggregator)) {
+                        globals.add(aggregator);
+                    } else {
+                        collectors.add(aggregator);
                     }
                 }
                 context.aggregations().aggregators(aggregators);
+                context.aggregations().globalAggregators(globals);
                 if (!collectors.isEmpty()) {
                     final Collector collector = createCollector(context, collectors);
                     context.queryCollectorManagers().put(AggregationPhase.class, new CollectorManager<Collector, ReduceableSearchResult>() {
@@ -103,14 +107,7 @@ public class AggregationPhase {
             return;
         }
 
-        Aggregator[] aggregators = context.aggregations().aggregators();
-        List<Aggregator> globals = new ArrayList<>();
-        for (int i = 0; i < aggregators.length; i++) {
-            if (aggregators[i] instanceof GlobalAggregator) {
-                globals.add(aggregators[i]);
-            }
-        }
-
+        final List<Aggregator> globals = context.aggregations().globalAggregators();
         // optimize the global collector based execution
         if (!globals.isEmpty()) {
             BucketCollector globalsCollector = MultiBucketCollector.wrap(globals);
@@ -138,9 +135,10 @@ public class AggregationPhase {
             }
         }
 
-        List<InternalAggregation> aggregations = new ArrayList<>(aggregators.length);
+        List<Aggregator> aggregators = context.aggregations().aggregators();
+        List<InternalAggregation> aggregations = new ArrayList<>(aggregators.size());
         context.aggregations().resetBucketMultiConsumer();
-        for (Aggregator aggregator : context.aggregations().aggregators()) {
+        for (Aggregator aggregator : aggregators) {
             try {
                 aggregator.postCollection();
                 aggregations.add(aggregator.buildTopLevel());
@@ -167,5 +165,15 @@ public class AggregationPhase {
             );
         }
         return collector;
+    }
+
+    /**
+     * @param aggregator to verify if it is global or not
+     * @return true passed in aggregator is of type global aggregator even if it is wrapped with ProfilingAggregator
+     *         false otherwise
+     */
+    private boolean isGlobalAggregator(Aggregator aggregator) {
+        return (aggregator instanceof GlobalAggregator ||
+            (aggregator instanceof ProfilingAggregator && ProfilingAggregator.unwrap(aggregator) instanceof GlobalAggregator));
     }
 }

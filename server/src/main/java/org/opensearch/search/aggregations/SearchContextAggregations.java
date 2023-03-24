@@ -31,6 +31,8 @@
 
 package org.opensearch.search.aggregations;
 
+import java.util.List;
+
 import static org.opensearch.search.aggregations.MultiBucketConsumerService.MultiBucketConsumer;
 
 /**
@@ -42,7 +44,8 @@ public class SearchContextAggregations {
 
     private final AggregatorFactories factories;
     private final MultiBucketConsumer multiBucketConsumer;
-    private Aggregator[] aggregators;
+    private List<Aggregator> aggregators;
+    private List<Aggregator> globalAggregators;
 
     /**
      * Creates a new aggregation context with the parsed aggregator factories
@@ -56,7 +59,10 @@ public class SearchContextAggregations {
         return factories;
     }
 
-    public Aggregator[] aggregators() {
+    /**
+     * @return all the registered aggregators (including global ones)
+     */
+    public List<Aggregator> aggregators() {
         return aggregators;
     }
 
@@ -65,8 +71,23 @@ public class SearchContextAggregations {
      *
      * @param aggregators The top level aggregators of the search execution.
      */
-    public void aggregators(Aggregator[] aggregators) {
+    public void aggregators(List<Aggregator> aggregators) {
         this.aggregators = aggregators;
+    }
+
+    /**
+     * @return all the registered global aggregators
+     */
+    public List<Aggregator> globalAggregators() {
+        return globalAggregators;
+    }
+
+    /**
+     * Registers all the created global aggregators for the search context
+     * @param globalAggregators The global aggregators of the search context
+     */
+    public void globalAggregators(List<Aggregator> globalAggregators) {
+        this.globalAggregators = globalAggregators;
     }
 
     /**

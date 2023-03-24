@@ -39,6 +39,7 @@ import org.opensearch.search.internal.SearchContext;
 import org.opensearch.test.OpenSearchSingleNodeTestCase;
 
 import java.io.IOException;
+import java.util.List;
 
 public class AggregationCollectorTests extends OpenSearchSingleNodeTestCase {
 
@@ -74,9 +75,9 @@ public class AggregationCollectorTests extends OpenSearchSingleNodeTestCase {
             SearchContext context = createSearchContext(index);
             final AggregatorFactories factories = AggregatorFactories.parseAggregators(aggParser)
                 .build(context.getQueryShardContext(), null);
-            final Aggregator[] aggregators = factories.createTopLevelAggregators(context);
-            assertEquals(1, aggregators.length);
-            return aggregators[0].scoreMode().needsScores();
+            final List<Aggregator> aggregators = factories.createTopLevelAggregators(context);
+            assertEquals(1, aggregators.size());
+            return aggregators.get(0).scoreMode().needsScores();
         }
     }
 

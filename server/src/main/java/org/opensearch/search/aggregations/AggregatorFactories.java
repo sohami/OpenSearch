@@ -268,9 +268,9 @@ public class AggregatorFactories {
         return aggregators;
     }
 
-    public Aggregator[] createTopLevelAggregators(SearchContext searchContext) throws IOException {
+    public List<Aggregator> createTopLevelAggregators(SearchContext searchContext) throws IOException {
         // These aggregators are going to be used with a single bucket ordinal, no need to wrap the PER_BUCKET ones
-        Aggregator[] aggregators = new Aggregator[factories.length];
+        List<Aggregator> aggregators = new ArrayList<>(factories.length);
         for (int i = 0; i < factories.length; i++) {
             /*
              * Top level aggs only collect from owningBucketOrd 0 which is
@@ -281,7 +281,7 @@ public class AggregatorFactories {
             if (profilers != null) {
                 factory = new ProfilingAggregator(factory, profilers.getAggregationProfiler());
             }
-            aggregators[i] = factory;
+            aggregators.add(factory);
         }
         return aggregators;
     }
