@@ -50,15 +50,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import static org.opensearch.search.profile.query.CollectorResult.REASON_AGGREGATION_GLOBAL;
+
 /**
  * Aggregation phase of a search request, used to collect aggregations
  *
  * @opensearch.internal
  */
-public class AggregationPhase {
+public class DefaultAggregationProcessor implements AggregationProcessor {
 
     @Inject
-    public AggregationPhase() {}
+    public DefaultAggregationProcessor() {}
 
     public void preProcess(SearchContext context) {
         if (context.aggregations() != null) {
@@ -77,8 +79,8 @@ public class AggregationPhase {
                 context.aggregations().aggregators(aggregators);
                 context.aggregations().globalAggregators(globals);
                 if (!collectors.isEmpty()) {
-                    final Collector collector = createCollector(context, collectors);
-                    context.queryCollectorManagers().put(AggregationPhase.class, new CollectorManager<Collector, ReduceableSearchResult>() {
+                    final Collector collector = createCollector(context, collectors, CollectorResult.REASON_AGGREGATION);
+                    context.queryCollectorManagers().put(AggregationProcessor.class, new CollectorManager<Collector, ReduceableSearchResult>() {
                         @Override
                         public Collector newCollector() throws IOException {
                             return collector;
@@ -96,7 +98,8 @@ public class AggregationPhase {
         }
     }
 
-    public void execute(SearchContext context) {
+    @Override
+    public void postProcess(SearchContext context) {
         if (context.aggregations() == null) {
             context.queryResult().aggregations(null);
             return;
@@ -110,25 +113,15 @@ public class AggregationPhase {
         final List<Aggregator> globals = context.aggregations().globalAggregators();
         // optimize the global collector based execution
         if (!globals.isEmpty()) {
-            BucketCollector globalsCollector = MultiBucketCollector.wrap(globals);
+            //BucketCollector globalsCollector = MultiBucketCollector.wrap(globals);
             Query query = context.buildFilteredQuery(Queries.newMatchAllQuery());
 
             try {
-                final Collector collector;
-                if (context.getProfilers() == null) {
-                    collector = globalsCollector;
-                } else {
-                    InternalProfileCollector profileCollector = new InternalProfileCollector(
-                        globalsCollector,
-                        CollectorResult.REASON_AGGREGATION_GLOBAL,
-                        // TODO: report on sub collectors
-                        Collections.emptyList()
-                    );
-                    collector = profileCollector;
+                final Collector collector = createCollector(context, globals, REASON_AGGREGATION_GLOBAL);
+                if (collector instanceof InternalProfileCollector) {
                     // start a new profile with this collector
-                    context.getProfilers().addQueryProfiler().setCollector(profileCollector);
+                    context.getProfilers().addQueryProfiler().setCollector((InternalProfileCollector) collector);
                 }
-                globalsCollector.preCollection();
                 context.searcher().search(query, collector);
             } catch (Exception e) {
                 throw new QueryPhaseExecutionException(context.shardTarget(), "Failed to execute global aggregators", e);
@@ -150,16 +143,16 @@ public class AggregationPhase {
 
         // disable aggregations so that they don't run on next pages in case of scrolling
         context.aggregations(null);
-        context.queryCollectorManagers().remove(AggregationPhase.class);
+        context.queryCollectorManagers().remove(AggregationProcessor.class);
     }
 
-    private Collector createCollector(SearchContext context, List<Aggregator> collectors) throws IOException {
+    private Collector createCollector(SearchContext context, List<Aggregator> collectors, String reason) throws IOException {
         Collector collector = MultiBucketCollector.wrap(collectors);
         ((BucketCollector) collector).preCollection();
         if (context.getProfilers() != null) {
             collector = new InternalProfileCollector(
                 collector,
-                CollectorResult.REASON_AGGREGATION,
+                reason,
                 // TODO: report on child aggs as well
                 Collections.emptyList()
             );

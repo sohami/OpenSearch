@@ -115,6 +115,7 @@ import org.opensearch.plugins.SearchPlugin.SignificanceHeuristicSpec;
 import org.opensearch.plugins.SearchPlugin.SortSpec;
 import org.opensearch.plugins.SearchPlugin.SuggesterSpec;
 import org.opensearch.search.aggregations.AggregationBuilder;
+import org.opensearch.search.aggregations.AggregationProcessor;
 import org.opensearch.search.aggregations.BaseAggregationBuilder;
 import org.opensearch.search.aggregations.InternalAggregation;
 import org.opensearch.search.aggregations.PipelineAggregationBuilder;
