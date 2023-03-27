@@ -1125,7 +1125,7 @@ public class SearchServiceTests extends OpenSearchSingleNodeTestCase {
 
     public void testCreateReduceContext() {
         SearchService service = getInstanceFromNode(SearchService.class);
-        InternalAggregation.ReduceContextBuilder reduceContextBuilder = service.aggReduceContextBuilder(new SearchRequest());
+        InternalAggregation.ReduceContextBuilder reduceContextBuilder = service.aggReduceContextBuilder(new SearchRequest().source());
         {
             InternalAggregation.ReduceContext reduceContext = reduceContextBuilder.forFinalReduction();
             expectThrows(

@@ -1589,20 +1589,20 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
      * Returns a builder for {@link InternalAggregation.ReduceContext}. This
      * builder retains a reference to the provided {@link SearchRequest}.
      */
-    public InternalAggregation.ReduceContextBuilder aggReduceContextBuilder(SearchRequest request) {
+    public InternalAggregation.ReduceContextBuilder aggReduceContextBuilder(SearchSourceBuilder searchSourceBuilder) {
         return new InternalAggregation.ReduceContextBuilder() {
             @Override
             public InternalAggregation.ReduceContext forPartialReduction() {
                 return InternalAggregation.ReduceContext.forPartialReduction(
                     bigArrays,
                     scriptService,
-                    () -> requestToPipelineTree(request)
+                    () -> requestToPipelineTree(searchSourceBuilder)
                 );
             }
 
             @Override
             public ReduceContext forFinalReduction() {
-                PipelineTree pipelineTree = requestToPipelineTree(request);
+                PipelineTree pipelineTree = requestToPipelineTree(searchSourceBuilder);
                 return InternalAggregation.ReduceContext.forFinalReduction(
                     bigArrays,
                     scriptService,
@@ -1613,11 +1613,11 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         };
     }
 
-    private static PipelineTree requestToPipelineTree(SearchRequest request) {
-        if (request.source() == null || request.source().aggregations() == null) {
+    private static PipelineTree requestToPipelineTree(SearchSourceBuilder searchSourceBuilder) {
+        if (searchSourceBuilder == null || searchSourceBuilder.aggregations() == null) {
             return PipelineTree.EMPTY;
         }
-        return request.source().aggregations().buildPipelineTree();
+        return searchSourceBuilder.aggregations().buildPipelineTree();
     }
 
     /**
