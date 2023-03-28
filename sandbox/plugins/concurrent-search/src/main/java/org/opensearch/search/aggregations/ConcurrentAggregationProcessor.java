@@ -6,62 +6,25 @@
  * compatible open source license.
  */
 
-/*
- * Licensed to Elasticsearch under one or more contributor
- * license agreements. See the NOTICE file distributed with
- * this work for additional information regarding copyright
- * ownership. Elasticsearch licenses this file to you under
- * the Apache License, Version 2.0 (the "License"); you may
- * not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-/*
- * Modifications Copyright OpenSearch Contributors. See
- * GitHub history for details.
- */
-
 package org.opensearch.search.aggregations;
 
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.Query;
-import org.opensearch.common.inject.Inject;
 import org.opensearch.common.lucene.search.Queries;
-import org.opensearch.search.aggregations.bucket.global.GlobalAggregator;
 import org.opensearch.search.internal.SearchContext;
-import org.opensearch.search.profile.aggregation.ProfilingAggregator;
 import org.opensearch.search.profile.query.CollectorResult;
 import org.opensearch.search.profile.query.InternalProfileCollector;
 import org.opensearch.search.query.QueryPhaseExecutionException;
-import org.opensearch.search.query.ReduceableSearchResult;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 import static org.opensearch.search.profile.query.CollectorResult.REASON_AGGREGATION_GLOBAL;
 
-/**
- * Aggregation phase of a search request, used to collect aggregations
- *
- * @opensearch.internal
- */
-public class DefaultAggregationProcessor implements AggregationProcessor {
-
-    @Inject
-    public DefaultAggregationProcessor() {}
-
+public class ConcurrentAggregationProcessor extends DefaultAggregationProcessor {
+    @Override
     public void preProcess(SearchContext context) {
         if (context.aggregations() != null) {
             try {
@@ -72,17 +35,8 @@ public class DefaultAggregationProcessor implements AggregationProcessor {
                 context.aggregations().globalAggregators(globals);
                 if (!nonGlobals.isEmpty()) {
                     final Collector collector = createCollector(context, nonGlobals, CollectorResult.REASON_AGGREGATION);
-                    context.queryCollectorManagers().put(AggregationProcessor.class, new CollectorManager<Collector, ReduceableSearchResult>() {
-                        @Override
-                        public Collector newCollector() throws IOException {
-                            return collector;
-                        }
-
-                        @Override
-                        public ReduceableSearchResult reduce(Collection<Collector> collectors) throws IOException {
-                            throw new UnsupportedOperationException("The concurrent aggregation over index segments is not supported");
-                        }
-                    });
+                    context.queryCollectorManagers().put(AggregationProcessor.class,
+                        new AggregationCollectorManager(context, CollectorResult.REASON_AGGREGATION, collector));
                 }
             } catch (IOException e) {
                 throw new AggregationInitializationException("Could not initialize aggregators", e);
@@ -102,6 +56,7 @@ public class DefaultAggregationProcessor implements AggregationProcessor {
             return;
         }
 
+        // TODO: Global Aggregations is still performed on single search thread
         final List<Aggregator> globals = context.aggregations().globalAggregators();
         // optimize the global collector based execution
         if (!globals.isEmpty()) {
@@ -119,10 +74,10 @@ public class DefaultAggregationProcessor implements AggregationProcessor {
             }
         }
 
-        List<Aggregator> aggregators = context.aggregations().getAllAggregators();
-        List<InternalAggregation> aggregations = new ArrayList<>(aggregators.size());
+        List<Aggregator> allAggregators = context.aggregations().getAllAggregators();
+        List<InternalAggregation> aggregations = new ArrayList<>(allAggregators.size());
         context.aggregations().resetBucketMultiConsumer();
-        for (Aggregator aggregator : aggregators) {
+        for (Aggregator aggregator : allAggregators) {
             try {
                 aggregator.postCollection();
                 aggregations.add(aggregator.buildTopLevel());
@@ -130,24 +85,18 @@ public class DefaultAggregationProcessor implements AggregationProcessor {
                 throw new AggregationExecutionException("Failed to build aggregation [" + aggregator.name() + "]", e);
             }
         }
-        context.queryResult().aggregations(new InternalAggregations(aggregations));
+        InternalAggregations internalAggregations = new InternalAggregations(aggregations);
+        // check if concurrent or non-concurrent segment level aggregations is performed
+        if (context.searcher().getExecutor() != null) {
+            // perform shard level reduce
+            final List<InternalAggregations> internalAggregationsList = Collections.singletonList(internalAggregations);
+            internalAggregations = InternalAggregations.topLevelReduce(internalAggregationsList,
+                context.getReduceContext(context.request().source()).forPartialReduction());
+        }
+        context.queryResult().aggregations(internalAggregations);
 
         // disable aggregations so that they don't run on next pages in case of scrolling
         context.aggregations(null);
         context.queryCollectorManagers().remove(AggregationProcessor.class);
-    }
-
-    static Collector createCollector(SearchContext context, List<Aggregator> collectors, String reason) throws IOException {
-        Collector collector = MultiBucketCollector.wrap(collectors);
-        ((BucketCollector) collector).preCollection();
-        if (context.getProfilers() != null) {
-            collector = new InternalProfileCollector(
-                collector,
-                reason,
-                // TODO: report on child aggs as well
-                Collections.emptyList()
-            );
-        }
-        return collector;
     }
 }

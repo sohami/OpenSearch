@@ -18,6 +18,8 @@ import org.apache.logging.log4j.Logger;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.Query;
+import org.opensearch.search.aggregations.AggregationProcessor;
+import org.opensearch.search.aggregations.ConcurrentAggregationProcessor;
 import org.opensearch.search.internal.ContextIndexSearcher;
 import org.opensearch.search.internal.SearchContext;
 import org.opensearch.search.profile.query.ProfileCollectorManager;
@@ -30,6 +32,8 @@ import org.opensearch.search.query.QueryPhase.TimeExceededException;
  */
 public class ConcurrentQueryPhaseSearcher extends DefaultQueryPhaseSearcher {
     private static final Logger LOGGER = LogManager.getLogger(ConcurrentQueryPhaseSearcher.class);
+
+    private static final AggregationProcessor CONCURRENT_AGGREGATION_PROCESSOR = new ConcurrentAggregationProcessor();
 
     /**
      * Default constructor
@@ -110,6 +114,11 @@ public class ConcurrentQueryPhaseSearcher extends DefaultQueryPhaseSearcher {
         }
 
         return topDocsFactory.shouldRescore();
+    }
+
+    @Override
+    public AggregationProcessor aggregationProcessor() {
+        return CONCURRENT_AGGREGATION_PROCESSOR;
     }
 
     private static boolean allowConcurrentSegmentSearch(final ContextIndexSearcher searcher) {

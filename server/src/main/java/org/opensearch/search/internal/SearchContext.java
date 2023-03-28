@@ -35,6 +35,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Query;
+import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchShardTask;
 import org.opensearch.action.search.SearchType;
 import org.opensearch.common.Nullable;
@@ -53,7 +54,9 @@ import org.opensearch.index.similarity.SimilarityService;
 import org.opensearch.search.RescoreDocIds;
 import org.opensearch.search.SearchExtBuilder;
 import org.opensearch.search.SearchShardTarget;
+import org.opensearch.search.aggregations.InternalAggregation;
 import org.opensearch.search.aggregations.SearchContextAggregations;
+import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.search.collapse.CollapseContext;
 import org.opensearch.search.dfs.DfsSearchResult;
 import org.opensearch.search.fetch.FetchPhase;
@@ -429,4 +432,8 @@ public abstract class SearchContext implements Releasable {
     }
 
     public abstract ReaderContext readerContext();
+
+    public InternalAggregation.ReduceContextBuilder getReduceContext(SearchSourceBuilder requestSource) {
+        throw new UnsupportedOperationException("SearchContext doesn't support creating the AggregationReduceContext");
+    }
 }

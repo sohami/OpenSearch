@@ -50,7 +50,9 @@ import org.opensearch.index.shard.IndexShard;
 import org.opensearch.index.similarity.SimilarityService;
 import org.opensearch.search.SearchExtBuilder;
 import org.opensearch.search.SearchShardTarget;
+import org.opensearch.search.aggregations.InternalAggregation;
 import org.opensearch.search.aggregations.SearchContextAggregations;
+import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.search.collapse.CollapseContext;
 import org.opensearch.search.dfs.DfsSearchResult;
 import org.opensearch.search.fetch.FetchPhase;
@@ -541,5 +543,10 @@ public abstract class FilteredSearchContext extends SearchContext {
     @Override
     public ReaderContext readerContext() {
         return in.readerContext();
+    }
+
+    @Override
+    public InternalAggregation.ReduceContextBuilder getReduceContext(SearchSourceBuilder requestSource) {
+        return in.getReduceContext(requestSource);
     }
 }

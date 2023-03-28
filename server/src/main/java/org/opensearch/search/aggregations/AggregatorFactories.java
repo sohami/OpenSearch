@@ -48,6 +48,8 @@ import org.opensearch.index.query.QueryRewriteContext;
 import org.opensearch.index.query.QueryShardContext;
 import org.opensearch.index.query.Rewriteable;
 import org.opensearch.search.aggregations.bucket.global.GlobalAggregationBuilder;
+import org.opensearch.search.aggregations.bucket.global.GlobalAggregator;
+import org.opensearch.search.aggregations.bucket.global.GlobalAggregatorFactory;
 import org.opensearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.opensearch.search.aggregations.pipeline.PipelineAggregator;
 import org.opensearch.search.aggregations.pipeline.PipelineAggregator.PipelineTree;
@@ -270,7 +272,25 @@ public class AggregatorFactories {
 
     public List<Aggregator> createTopLevelAggregators(SearchContext searchContext) throws IOException {
         // These aggregators are going to be used with a single bucket ordinal, no need to wrap the PER_BUCKET ones
-        List<Aggregator> aggregators = new ArrayList<>(factories.length);
+        List<Aggregator> allAggregators = new ArrayList<>();
+        allAggregators.addAll(createNonGlobalTopLevelAggregators(searchContext));
+        allAggregators.addAll(createGlobalTopLevelAggregators(searchContext));
+        return allAggregators;
+    }
+
+    public List<Aggregator> createNonGlobalTopLevelAggregators(SearchContext searchContext) throws IOException {
+        // These aggregators are going to be used with a single bucket ordinal, no need to wrap the PER_BUCKET ones
+        return createTopLevelAggregators(searchContext, false);
+    }
+
+    public List<Aggregator> createGlobalTopLevelAggregators(SearchContext searchContext) throws IOException {
+        // These aggregators are going to be used with a single bucket ordinal, no need to wrap the PER_BUCKET ones
+        return createTopLevelAggregators(searchContext, true);
+    }
+
+    private List<Aggregator> createTopLevelAggregators(SearchContext searchContext, boolean globalAggs) throws IOException {
+        // These aggregators are going to be used with a single bucket ordinal, no need to wrap the PER_BUCKET ones
+        List<Aggregator> aggregators = new ArrayList<>();
         for (int i = 0; i < factories.length; i++) {
             /*
              * Top level aggs only collect from owningBucketOrd 0 which is
@@ -281,7 +301,11 @@ public class AggregatorFactories {
             if (profilers != null) {
                 factory = new ProfilingAggregator(factory, profilers.getAggregationProfiler());
             }
-            aggregators.add(factory);
+            if (globalAggs && ProfilingAggregator.unwrap(factory) instanceof GlobalAggregator) {
+                aggregators.add(factory);
+            } else if (!globalAggs && !(ProfilingAggregator.unwrap(factory) instanceof GlobalAggregator)){
+                aggregators.add(factory);
+            }
         }
         return aggregators;
     }
