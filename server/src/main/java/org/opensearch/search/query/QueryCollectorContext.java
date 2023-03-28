@@ -215,7 +215,8 @@ public abstract class QueryCollectorContext {
                 final List<CollectorManager<?, ReduceableSearchResult>> managers = new ArrayList<>();
                 managers.add(in);
                 managers.addAll(subs);
-                return QueryCollectorManagerContext.createOpaqueCollectorManager(managers);
+                // create a multi collector manager
+                return QueryCollectorManagerContext.createMultiCollectorManager(managers);
             }
         };
     }

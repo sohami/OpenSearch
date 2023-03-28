@@ -93,7 +93,7 @@ public class ConcurrentQueryPhaseSearcher extends DefaultQueryPhaseSearcher {
             collectorManager = profileCollectorManager;
         } else {
             // Create multi collector manager instance
-            collectorManager = QueryCollectorManagerContext.createMultiCollectorManager(collectorContexts);
+            collectorManager = QueryCollectorManagerContext.createQueryCollectorManager(collectorContexts);
         }
 
         try {

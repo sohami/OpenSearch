@@ -15,7 +15,6 @@ import org.opensearch.search.profile.query.InternalProfileCollectorManager;
 import org.opensearch.search.profile.query.ProfileCollectorManager;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -77,17 +76,19 @@ public abstract class QueryCollectorManagerContext {
     }
 
     public static CollectorManager<? extends Collector, ReduceableSearchResult> createMultiCollectorManager(
+        List<CollectorManager<?, ReduceableSearchResult>> managers
+    ) {
+        return new QueryCollectorManager(managers);
+    }
+
+    public static CollectorManager<? extends Collector, ReduceableSearchResult> createQueryCollectorManager(
         List<QueryCollectorContext> collectors
     ) throws IOException {
-        final Collection<CollectorManager<? extends Collector, ReduceableSearchResult>> managers = new ArrayList<>();
-
         CollectorManager<?, ReduceableSearchResult> manager = null;
         for (QueryCollectorContext ctx : collectors) {
             manager = ctx.createManager(manager);
-            managers.add(manager);
         }
-
-        return new QueryCollectorManager(managers);
+        return manager;
     }
 
     public static ProfileCollectorManager<? extends Collector, ReduceableSearchResult> createQueryCollectorManagerWithProfiler(
