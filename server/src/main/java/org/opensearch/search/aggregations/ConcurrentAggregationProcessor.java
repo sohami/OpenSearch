@@ -23,6 +23,9 @@ import java.util.List;
 
 import static org.opensearch.search.profile.query.CollectorResult.REASON_AGGREGATION_GLOBAL;
 
+/**
+ * Used when concurrent search is enabled to process aggregation operators
+ */
 public class ConcurrentAggregationProcessor extends DefaultAggregationProcessor {
     @Override
     public void preProcess(SearchContext context) {

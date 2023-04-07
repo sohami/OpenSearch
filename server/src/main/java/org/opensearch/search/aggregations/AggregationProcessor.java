@@ -10,6 +10,9 @@ package org.opensearch.search.aggregations;
 
 import org.opensearch.search.internal.SearchContext;
 
+/**
+ * Interface for aggregation processing before and after search on lucene segments
+ */
 public interface AggregationProcessor {
 
     void preProcess(SearchContext context);

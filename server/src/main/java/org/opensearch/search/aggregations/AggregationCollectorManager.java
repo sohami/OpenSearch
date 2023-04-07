@@ -21,6 +21,9 @@ import java.util.List;
 
 import static org.opensearch.search.aggregations.DefaultAggregationProcessor.createCollector;
 
+/**
+ * CollectorManager for Aggregation operators
+ */
 public class AggregationCollectorManager implements CollectorManager<Collector, ReduceableSearchResult> {
     private final SearchContext context;
     private final String aggregationReason;

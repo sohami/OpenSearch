@@ -64,6 +64,7 @@ import org.apache.lucene.util.CombinedBitSet;
 import org.apache.lucene.util.SparseFixedBitSet;
 import org.opensearch.common.lease.Releasable;
 import org.opensearch.common.lucene.search.TopDocsAndMaxScore;
+import org.opensearch.common.util.FeatureFlags;
 import org.opensearch.search.DocValueFormat;
 import org.opensearch.search.dfs.AggregatedDfs;
 import org.opensearch.search.profile.ContextualProfileBreakdown;
@@ -432,5 +433,17 @@ public class ContextIndexSearcher extends IndexSearcher implements Releasable {
         public void clear() {
             runnables.clear();
         }
+    }
+
+    @Override
+    protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
+        // TODO: if feature is enabled then force the slice computation to always perform concurrent search
+        // TODO: IMP: this is done for test run in POC for now but needs to be changed
+        if (FeatureFlags.isEnabled(FeatureFlags.CONCURRENT_SEGMENT_SEARCH)) {
+            final LeafSlice[] allSlices = slices(leaves, 100, 1);
+            System.out.println("Count of slices: " + allSlices.length);
+            return allSlices;
+        }
+        return super.slices(leaves);
     }
 }

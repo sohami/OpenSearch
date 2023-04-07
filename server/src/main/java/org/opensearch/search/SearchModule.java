@@ -35,6 +35,7 @@ package org.opensearch.search;
 import org.apache.lucene.search.BooleanQuery;
 import org.opensearch.common.NamedRegistry;
 import org.opensearch.common.Nullable;
+import org.opensearch.common.util.FeatureFlags;
 import org.opensearch.core.ParseField;
 import org.opensearch.common.geo.GeoShapeType;
 import org.opensearch.common.geo.ShapesAvailability;
@@ -256,6 +257,7 @@ import org.opensearch.search.fetch.subphase.highlight.HighlightPhase;
 import org.opensearch.search.fetch.subphase.highlight.Highlighter;
 import org.opensearch.search.fetch.subphase.highlight.PlainHighlighter;
 import org.opensearch.search.fetch.subphase.highlight.UnifiedHighlighter;
+import org.opensearch.search.query.ConcurrentQueryPhaseSearcher;
 import org.opensearch.search.query.QueryPhase;
 import org.opensearch.search.query.QueryPhaseSearcher;
 import org.opensearch.search.rescore.QueryRescorerBuilder;
@@ -1279,10 +1281,18 @@ public class SearchModule {
     }
 
     public QueryPhase getQueryPhase() {
-        return (queryPhaseSearcher == null) ? new QueryPhase() : new QueryPhase(queryPhaseSearcher);
+        // TODO: Need to see if this is good enough
+        if (FeatureFlags.isEnabled(FeatureFlags.CONCURRENT_SEGMENT_SEARCH)) {
+            return new QueryPhase(new ConcurrentQueryPhaseSearcher());
+        }
+        return new QueryPhase();
+        //return (queryPhaseSearcher == null) ? new QueryPhase() : new QueryPhase(queryPhaseSearcher);
     }
 
     public @Nullable ExecutorService getIndexSearcherExecutor(ThreadPool pool) {
-        return (indexSearcherExecutorProvider == null) ? null : indexSearcherExecutorProvider.getExecutor(pool);
+        if (FeatureFlags.isEnabled(FeatureFlags.CONCURRENT_SEGMENT_SEARCH)) {
+            return pool.executor(ThreadPool.Names.INDEX_SEARCHER);
+        }
+        return null;
     }
 }

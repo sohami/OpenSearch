@@ -8,23 +8,23 @@
 
 package org.opensearch.search.query;
 
-import static org.opensearch.search.query.TopDocsCollectorContext.createTopDocsCollectorContext;
-
-import java.io.IOException;
-import java.util.LinkedList;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.Query;
 import org.opensearch.search.aggregations.AggregationProcessor;
-import org.opensearch.search.aggregations.DefaultAggregationProcessor;
+import org.opensearch.search.aggregations.ConcurrentAggregationProcessor;
 import org.opensearch.search.internal.ContextIndexSearcher;
 import org.opensearch.search.internal.SearchContext;
 import org.opensearch.search.profile.query.ProfileCollectorManager;
 import org.opensearch.search.query.QueryPhase.DefaultQueryPhaseSearcher;
 import org.opensearch.search.query.QueryPhase.TimeExceededException;
+
+import java.io.IOException;
+import java.util.LinkedList;
+
+import static org.opensearch.search.query.TopDocsCollectorContext.createTopDocsCollectorContext;
 
 /**
  * The implementation of the {@link QueryPhaseSearcher} which attempts to use concurrent
@@ -33,7 +33,7 @@ import org.opensearch.search.query.QueryPhase.TimeExceededException;
 public class ConcurrentQueryPhaseSearcher extends DefaultQueryPhaseSearcher {
     private static final Logger LOGGER = LogManager.getLogger(ConcurrentQueryPhaseSearcher.class);
 
-    private static final AggregationProcessor DEFAULT_AGGREGATION_PROCESSOR = new DefaultAggregationProcessor();
+    private static final AggregationProcessor CONCURRENT_AGGREGATION_PROCESSOR = new ConcurrentAggregationProcessor();
 
     /**
      * Default constructor
@@ -52,13 +52,13 @@ public class ConcurrentQueryPhaseSearcher extends DefaultQueryPhaseSearcher {
         boolean couldUseConcurrentSegmentSearch = allowConcurrentSegmentSearch(searcher);
 
         // TODO: support aggregations
-        if (searchContext.aggregations() != null) {
-            couldUseConcurrentSegmentSearch = false;
-            LOGGER.debug("Unable to use concurrent search over index segments (experimental): aggregations are present");
-        }
+//        if (searchContext.aggregations() != null) {
+//            couldUseConcurrentSegmentSearch = false;
+//            LOGGER.debug("Unable to use concurrent search over index segments (experimental): aggregations are present");
+//        }
 
         if (couldUseConcurrentSegmentSearch) {
-            LOGGER.debug("Using concurrent search over index segments (experimental)");
+            LOGGER.info("SORABH--> Using concurrent search over index segments (experimental)");
             return searchWithCollectorManager(searchContext, searcher, query, collectors, hasFilterCollector, hasTimeout);
         } else {
             return super.searchWithCollector(searchContext, searcher, query, collectors, hasFilterCollector, hasTimeout);
@@ -82,9 +82,9 @@ public class ConcurrentQueryPhaseSearcher extends DefaultQueryPhaseSearcher {
         final CollectorManager<?, ReduceableSearchResult> collectorManager;
 
         // TODO: support aggregations in concurrent segment search flow
-        if (searchContext.aggregations() != null) {
-            throw new UnsupportedOperationException("The concurrent segment search does not support aggregations yet");
-        }
+//        if (searchContext.aggregations() != null) {
+//            throw new UnsupportedOperationException("The concurrent segment search does not support aggregations yet");
+//        }
 
         if (searchContext.getProfilers() != null) {
             final ProfileCollectorManager<? extends Collector, ReduceableSearchResult> profileCollectorManager =
@@ -118,7 +118,7 @@ public class ConcurrentQueryPhaseSearcher extends DefaultQueryPhaseSearcher {
 
     @Override
     public AggregationProcessor aggregationProcessor() {
-        return DEFAULT_AGGREGATION_PROCESSOR;
+        return CONCURRENT_AGGREGATION_PROCESSOR;
     }
 
     private static boolean allowConcurrentSegmentSearch(final ContextIndexSearcher searcher) {
