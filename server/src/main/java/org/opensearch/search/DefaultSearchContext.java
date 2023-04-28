@@ -64,7 +64,9 @@ import org.opensearch.index.query.QueryShardContext;
 import org.opensearch.index.search.NestedHelper;
 import org.opensearch.index.shard.IndexShard;
 import org.opensearch.index.similarity.SimilarityService;
+import org.opensearch.search.aggregations.InternalAggregation;
 import org.opensearch.search.aggregations.SearchContextAggregations;
+import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.search.collapse.CollapseContext;
 import org.opensearch.search.dfs.DfsSearchResult;
 import org.opensearch.search.fetch.FetchPhase;
@@ -100,6 +102,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 import java.util.function.LongSupplier;
 
 /**
@@ -176,6 +179,7 @@ final class DefaultSearchContext extends SearchContext {
     private final Map<Class<?>, CollectorManager<? extends Collector, ReduceableSearchResult>> queryCollectorManagers = new HashMap<>();
     private final QueryShardContext queryShardContext;
     private final FetchPhase fetchPhase;
+    private final Function<SearchSourceBuilder, InternalAggregation.ReduceContextBuilder> requestToAggReduceContextBuilder;
 
     DefaultSearchContext(
         ReaderContext readerContext,
@@ -189,7 +193,8 @@ final class DefaultSearchContext extends SearchContext {
         boolean lowLevelCancellation,
         Version minNodeVersion,
         boolean validate,
-        Executor executor
+        Executor executor,
+        Function<SearchSourceBuilder, InternalAggregation.ReduceContextBuilder> requestToAggReduceContextBuilder
     ) throws IOException {
         this.readerContext = readerContext;
         this.request = request;
@@ -226,6 +231,7 @@ final class DefaultSearchContext extends SearchContext {
         );
         queryBoost = request.indexBoost();
         this.lowLevelCancellation = lowLevelCancellation;
+        this.requestToAggReduceContextBuilder = requestToAggReduceContextBuilder;
     }
 
     @Override
@@ -886,6 +892,11 @@ final class DefaultSearchContext extends SearchContext {
     @Override
     public ReaderContext readerContext() {
         return readerContext;
+    }
+
+    @Override
+    public InternalAggregation.ReduceContext aggregationReduceContext() {
+        return requestToAggReduceContextBuilder.apply(request.source()).forPartialReduction();
     }
 
     private boolean shouldReverseLeafReaderContexts() {
