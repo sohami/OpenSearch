@@ -117,6 +117,7 @@ import org.opensearch.plugins.SearchPlugin.SortSpec;
 import org.opensearch.plugins.SearchPlugin.SuggesterSpec;
 import org.opensearch.search.aggregations.AggregationBuilder;
 import org.opensearch.search.aggregations.BaseAggregationBuilder;
+import org.opensearch.search.aggregations.ConcurrentAggregationProcessor;
 import org.opensearch.search.aggregations.InternalAggregation;
 import org.opensearch.search.aggregations.PipelineAggregationBuilder;
 import org.opensearch.search.aggregations.bucket.adjacency.AdjacencyMatrixAggregationBuilder;
@@ -1287,7 +1288,17 @@ public class SearchModule {
     }
 
     public QueryPhase getQueryPhase() {
-        return (queryPhaseSearcher == null) ? new QueryPhase() : new QueryPhase(queryPhaseSearcher);
+        // TODO: Add the unit tests
+        QueryPhase queryPhase;
+        if (queryPhaseSearcher == null) {
+            // use the defaults
+            queryPhase = new QueryPhase();
+        } else if (FeatureFlags.isEnabled(FeatureFlags.CONCURRENT_SEGMENT_SEARCH)) {
+            queryPhase = new QueryPhase(queryPhaseSearcher, new ConcurrentAggregationProcessor());
+        } else {
+            queryPhase = new QueryPhase(queryPhaseSearcher);
+        }
+        return queryPhase;
     }
 
     public @Nullable ExecutorService getIndexSearcherExecutor(ThreadPool pool) {

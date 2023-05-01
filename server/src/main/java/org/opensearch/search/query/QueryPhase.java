@@ -54,7 +54,8 @@ import org.opensearch.lucene.queries.SearchAfterSortedDocQuery;
 import org.opensearch.search.DocValueFormat;
 import org.opensearch.search.SearchContextSourcePrinter;
 import org.opensearch.search.SearchService;
-import org.opensearch.search.aggregations.AggregationPhase;
+import org.opensearch.search.aggregations.AggregationProcessor;
+import org.opensearch.search.aggregations.DefaultAggregationProcessor;
 import org.opensearch.search.internal.ContextIndexSearcher;
 import org.opensearch.search.internal.ScrollContext;
 import org.opensearch.search.internal.SearchContext;
@@ -89,9 +90,9 @@ public class QueryPhase {
     // TODO: remove this property
     public static final boolean SYS_PROP_REWRITE_SORT = Booleans.parseBoolean(System.getProperty("opensearch.search.rewrite_sort", "true"));
     public static final QueryPhaseSearcher DEFAULT_QUERY_PHASE_SEARCHER = new DefaultQueryPhaseSearcher();
-
+    public static final AggregationProcessor DEFAULT_AGGREGATION_PROCESSOR = new DefaultAggregationProcessor();
     private final QueryPhaseSearcher queryPhaseSearcher;
-    private final AggregationPhase aggregationPhase;
+    private final AggregationProcessor aggregationPhase;
     private final SuggestPhase suggestPhase;
     private final RescorePhase rescorePhase;
 
@@ -100,8 +101,12 @@ public class QueryPhase {
     }
 
     public QueryPhase(QueryPhaseSearcher queryPhaseSearcher) {
+        this(queryPhaseSearcher, DEFAULT_AGGREGATION_PROCESSOR);
+    }
+
+    public QueryPhase(QueryPhaseSearcher queryPhaseSearcher, AggregationProcessor aggregationProcessor) {
         this.queryPhaseSearcher = Objects.requireNonNull(queryPhaseSearcher, "QueryPhaseSearcher is required");
-        this.aggregationPhase = new AggregationPhase();
+        this.aggregationPhase = aggregationProcessor;
         this.suggestPhase = new SuggestPhase();
         this.rescorePhase = new RescorePhase();
     }
@@ -152,7 +157,7 @@ public class QueryPhase {
             rescorePhase.execute(searchContext);
         }
         suggestPhase.execute(searchContext);
-        aggregationPhase.execute(searchContext);
+        aggregationPhase.postProcess(searchContext);
 
         if (searchContext.getProfilers() != null) {
             ProfileShardResult shardResults = SearchProfileShardResults.buildShardResults(
