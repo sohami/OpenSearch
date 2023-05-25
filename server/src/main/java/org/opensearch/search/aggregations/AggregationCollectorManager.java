@@ -28,16 +28,18 @@ import java.util.List;
  * Common {@link CollectorManager} used by both concurrent and non-concurrent aggregation path and also for global and non-global
  * aggregation operators
  */
-public abstract class AggregationCollectorManager implements CollectorManager<Collector, ReduceableSearchResult> {
+public class AggregationCollectorManager implements CollectorManager<Collector, ReduceableSearchResult> {
     private final SearchContext context;
     private final CheckedFunction<SearchContext, List<Aggregator>, IOException> aggProvider;
     private final String collectorReason;
 
     protected Collector collector;
 
-    public AggregationCollectorManager(SearchContext context, CheckedFunction<SearchContext, List<Aggregator>, IOException> aggProvider,
-        String collectorReason)
-        throws IOException {
+    public AggregationCollectorManager(
+        SearchContext context,
+        CheckedFunction<SearchContext, List<Aggregator>, IOException> aggProvider,
+        String collectorReason
+    ) throws IOException {
         this.context = context;
         this.aggProvider = aggProvider;
         this.collectorReason = collectorReason;
@@ -60,9 +62,11 @@ public abstract class AggregationCollectorManager implements CollectorManager<Co
                 aggregators.add((Aggregator) currentCollector);
             } else if (currentCollector instanceof InternalProfileCollector) {
                 if (((InternalProfileCollector) currentCollector).getCollector() instanceof Aggregator) {
-                    aggregators.add((Aggregator)((InternalProfileCollector) currentCollector).getCollector());
+                    aggregators.add((Aggregator) ((InternalProfileCollector) currentCollector).getCollector());
                 } else if (((InternalProfileCollector) currentCollector).getCollector() instanceof MultiBucketCollector) {
-                    allCollectors.addAll(Arrays.asList(((MultiBucketCollector)((InternalProfileCollector) currentCollector).getCollector()).getCollectors()));
+                    allCollectors.addAll(
+                        Arrays.asList(((MultiBucketCollector) ((InternalProfileCollector) currentCollector).getCollector()).getCollectors())
+                    );
                 }
             } else if (currentCollector instanceof MultiBucketCollector) {
                 allCollectors.addAll(Arrays.asList(((MultiBucketCollector) currentCollector).getCollectors()));
@@ -87,8 +91,8 @@ public abstract class AggregationCollectorManager implements CollectorManager<Co
         if (collectors.size() > 1) {
             // using reduce is fine here instead of topLevelReduce as pipeline aggregation is evaluated on the coordinator after all
             // documents are collected across shards for an aggregation
-            return new AggregationReduceableSearchResult(InternalAggregations.reduce(Collections.singletonList(internalAggregations),
-                context.partial())
+            return new AggregationReduceableSearchResult(
+                InternalAggregations.reduce(Collections.singletonList(internalAggregations), context.partial())
             );
         } else {
             return new AggregationReduceableSearchResult(internalAggregations);

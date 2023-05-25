@@ -247,11 +247,16 @@ public class QueryPhase {
             }
             if (searchContext.queryCollectorManagers().isEmpty() == false) {
                 // plug in additional collectors, like aggregations except global aggregations
-                collectors.add(createMultiCollectorContext(searchContext.queryCollectorManagers().entrySet()
-                    .stream()
-                    .filter(entry -> !(entry.getKey().equals(GlobalAggCollectorManager.class)))
-                    .map(Map.Entry::getValue)
-                    .collect(Collectors.toList())));
+                collectors.add(
+                    createMultiCollectorContext(
+                        searchContext.queryCollectorManagers()
+                            .entrySet()
+                            .stream()
+                            .filter(entry -> !(entry.getKey().equals(GlobalAggCollectorManager.class)))
+                            .map(Map.Entry::getValue)
+                            .collect(Collectors.toList())
+                    )
+                );
             }
             if (searchContext.minimumScore() != null) {
                 // apply the minimum score after multi collector so we filter aggs as well

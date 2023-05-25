@@ -29,13 +29,11 @@ public class ConcurrentAggregationProcessor extends DefaultAggregationProcessor 
         try {
             if (context.aggregations() != null) {
                 if (context.aggregations().factories().hasNonGlobalAggregator()) {
-                    context.queryCollectorManagers()
-                        .put(NonGlobalAggCollectorManager.class, new NonGlobalAggCollectorManager(context));
+                    context.queryCollectorManagers().put(NonGlobalAggCollectorManager.class, new NonGlobalAggCollectorManager(context));
                 }
                 // initialize global aggregators as well, such that any failure to initialize can be caught before executing the request
                 if (context.aggregations().factories().hasGlobalAggregator()) {
-                    context.queryCollectorManagers()
-                        .put(GlobalAggCollectorManager.class, new GlobalAggCollectorManager(context));
+                    context.queryCollectorManagers().put(GlobalAggCollectorManager.class, new GlobalAggCollectorManager(context));
                 }
             }
         } catch (IOException ex) {

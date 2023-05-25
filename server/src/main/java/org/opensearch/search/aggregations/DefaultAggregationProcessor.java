@@ -8,7 +8,6 @@
 
 package org.opensearch.search.aggregations;
 
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Query;
 import org.opensearch.common.lucene.search.Queries;
 import org.opensearch.search.internal.SearchContext;
@@ -17,7 +16,6 @@ import org.opensearch.search.profile.query.InternalProfileComponent;
 import org.opensearch.search.query.QueryPhaseExecutionException;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 /**

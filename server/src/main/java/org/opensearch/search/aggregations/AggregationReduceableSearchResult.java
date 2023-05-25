@@ -19,6 +19,7 @@ import java.io.IOException;
  */
 public class AggregationReduceableSearchResult implements ReduceableSearchResult {
     private final InternalAggregations aggregations;
+
     public AggregationReduceableSearchResult(InternalAggregations aggregations) {
         this.aggregations = aggregations;
     }
