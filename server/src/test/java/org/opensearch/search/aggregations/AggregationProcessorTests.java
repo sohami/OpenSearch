@@ -62,8 +62,14 @@ public class AggregationProcessorTests extends AggregationSetupTests {
     private void testPreProcessCommon(String agg, int expectedGlobalAggs, int expectedNonGlobalAggs) throws Exception {
         testPreProcessCommon(agg, expectedGlobalAggs, expectedNonGlobalAggs, new ArrayList<>(), new ArrayList<>());
     }
-    private void testPreProcessCommon(String agg, int expectedGlobalAggs, int expectedNonGlobalAggs,
-        Collection<Collector> createdNonGlobalCollectors, Collection<Collector> createdGlobalCollectors) throws Exception {
+
+    private void testPreProcessCommon(
+        String agg,
+        int expectedGlobalAggs,
+        int expectedNonGlobalAggs,
+        Collection<Collector> createdNonGlobalCollectors,
+        Collection<Collector> createdGlobalCollectors
+    ) throws Exception {
         final AggregatorFactories aggregatorFactories = getAggregationFactories(agg);
         final SearchContextAggregations contextAggregations = new SearchContextAggregations(
             aggregatorFactories,

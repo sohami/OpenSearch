@@ -84,8 +84,10 @@ public class AggregationCollectorManagerTests extends AggregationSetupTests {
         expectThrows(AssertionError.class, () -> new NonGlobalAggCollectorManager(context));
 
         aggregatorFactories = getAggregationFactories(multipleNonGlobalAggs);
-        contextAggregations = new SearchContextAggregations(aggregatorFactories,
-            mock(MultiBucketConsumerService.MultiBucketConsumer.class));
+        contextAggregations = new SearchContextAggregations(
+            aggregatorFactories,
+            mock(MultiBucketConsumerService.MultiBucketConsumer.class)
+        );
         context.aggregations(contextAggregations);
         expectThrows(AssertionError.class, () -> new GlobalAggCollectorManagerWithSingleCollector(context));
         expectThrows(AssertionError.class, () -> new GlobalAggCollectorManager(context));
@@ -110,8 +112,8 @@ public class AggregationCollectorManagerTests extends AggregationSetupTests {
         final Collector expectedCollector = collectorManager.newCollector();
         for (int i = 0; i < randomIntBetween(2, 5); ++i) {
             final Collector newCollector = collectorManager.newCollector();
-            if (collectorManager instanceof GlobalAggCollectorManagerWithSingleCollector ||
-                collectorManager instanceof NonGlobalAggCollectorManagerWithSingleCollector) {
+            if (collectorManager instanceof GlobalAggCollectorManagerWithSingleCollector
+                || collectorManager instanceof NonGlobalAggCollectorManagerWithSingleCollector) {
                 // calling the newCollector multiple times should return the same instance each time
                 assertSame(expectedCollector, newCollector);
             } else if (collectorManager instanceof GlobalAggCollectorManager || collectorManager instanceof NonGlobalAggCollectorManager) {
