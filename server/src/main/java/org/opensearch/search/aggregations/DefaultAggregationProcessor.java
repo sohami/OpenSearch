@@ -11,7 +11,6 @@ package org.opensearch.search.aggregations;
 import org.apache.lucene.search.Query;
 import org.opensearch.common.lucene.search.Queries;
 import org.opensearch.search.internal.SearchContext;
-import org.opensearch.search.profile.query.InternalProfileCollector;
 import org.opensearch.search.profile.query.InternalProfileComponent;
 import org.opensearch.search.query.QueryPhaseExecutionException;
 
@@ -68,7 +67,7 @@ public class DefaultAggregationProcessor implements AggregationProcessor {
             try {
                 if (globalCollectorManager != null) {
                     Query query = context.buildFilteredQuery(Queries.newMatchAllQuery());
-                    if (globalCollectorManager.newCollector() instanceof InternalProfileCollector) {
+                    if (context.getProfilers() != null) {
                         context.getProfilers()
                             .addQueryProfiler()
                             .setCollector((InternalProfileComponent) globalCollectorManager.newCollector());
