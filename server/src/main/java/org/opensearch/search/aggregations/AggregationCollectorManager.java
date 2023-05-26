@@ -44,6 +44,8 @@ public class AggregationCollectorManager implements CollectorManager<Collector, 
         this.aggProvider = aggProvider;
         this.collectorReason = collectorReason;
         collector = createCollector(context, aggProvider.apply(context), collectorReason);
+        // For Aggregations we should not have a NO_OP_Collector
+        assert collector != BucketCollector.NO_OP_COLLECTOR;
     }
 
     @Override
