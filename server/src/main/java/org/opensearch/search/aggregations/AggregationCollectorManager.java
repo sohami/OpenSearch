@@ -77,7 +77,7 @@ class AggregationCollectorManager implements CollectorManager<Collector, Reducea
         context.aggregations().resetBucketMultiConsumer();
         for (Aggregator aggregator : aggregators) {
             try {
-                aggregator.postCollection();
+                //aggregator.postCollection();
                 internals.add(aggregator.buildTopLevel());
             } catch (IOException e) {
                 throw new AggregationExecutionException("Failed to build aggregation [" + aggregator.name() + "]", e);
