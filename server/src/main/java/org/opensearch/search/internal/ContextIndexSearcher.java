@@ -32,6 +32,8 @@
 
 package org.opensearch.search.internal;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -71,6 +73,7 @@ import org.opensearch.search.DocValueFormat;
 import org.opensearch.search.SearchService;
 import org.opensearch.search.aggregations.BucketCollector;
 import org.opensearch.search.dfs.AggregatedDfs;
+import org.opensearch.search.fetch.FetchPhase;
 import org.opensearch.search.profile.ContextualProfileBreakdown;
 import org.opensearch.search.profile.Timer;
 import org.opensearch.search.profile.query.InternalProfileCollector;
@@ -100,6 +103,8 @@ import java.util.concurrent.Executor;
  * @opensearch.internal
  */
 public class ContextIndexSearcher extends IndexSearcher implements Releasable {
+
+    private static final Logger LOGGER = LogManager.getLogger(ContextIndexSearcher.class);
     /**
      * The interval at which we check for search cancellation when we cannot use
      * a {@link CancellableBulkScorer}. See {@link #intersectScorerAndBitSet}.
@@ -564,5 +569,12 @@ public class ContextIndexSearcher extends IndexSearcher implements Releasable {
             }
         }
         return false;
+    }
+
+    @Override
+    protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
+        LeafSlice[] allSlices = slices(leaves, 1, 1);
+        LOGGER.info("SORABH --> Slice Count: {}", allSlices.length);
+        return allSlices;
     }
 }
