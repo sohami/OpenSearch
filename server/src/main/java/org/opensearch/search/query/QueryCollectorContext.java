@@ -183,6 +183,7 @@ public abstract class QueryCollectorContext {
         return new QueryCollectorContext(REASON_SEARCH_MULTI) {
             @Override
             Collector create(Collector in) throws IOException {
+                assert !subs.isEmpty() : "MultiCollectorContext is created with empty input subs";
                 List<Collector> subCollectors = new ArrayList<>();
                 subCollectors.add(in);
                 for (CollectorManager<? extends Collector, ReduceableSearchResult> manager : subs) {
@@ -193,6 +194,7 @@ public abstract class QueryCollectorContext {
 
             @Override
             protected InternalProfileCollector createWithProfiler(InternalProfileCollector in) throws IOException {
+                assert !subs.isEmpty() : "MultiCollectorContext is created with empty input subs";
                 final List<InternalProfileCollector> subCollectors = new ArrayList<>();
                 subCollectors.add(in);
 
@@ -212,6 +214,7 @@ public abstract class QueryCollectorContext {
             CollectorManager<? extends Collector, ReduceableSearchResult> createManager(
                 CollectorManager<? extends Collector, ReduceableSearchResult> in
             ) throws IOException {
+                assert !subs.isEmpty() : "MultiCollectorContext is created with empty input subs";
                 final List<CollectorManager<?, ReduceableSearchResult>> managers = new ArrayList<>();
                 managers.add(in);
                 managers.addAll(subs);

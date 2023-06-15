@@ -326,17 +326,17 @@ public class ContextIndexSearcher extends IndexSearcher implements Releasable {
         final Queue<Collector> collectors = new LinkedList<>();
         collectors.offer(collector);
         while (!collectors.isEmpty()) {
-            Collector originalCollector = collectors.poll();
-            if (originalCollector instanceof InternalProfileCollector) {
-                collectors.offer(((InternalProfileCollector) collector).getCollector());
-            } else if (originalCollector instanceof MinimumScoreCollector) {
-                collectors.offer(((MinimumScoreCollector) originalCollector).getCollector());
-            } else if(originalCollector instanceof MultiCollector) {
-                for (Collector innerCollector : ((MultiCollector) originalCollector).getCollectors()) {
+            Collector currentCollector = collectors.poll();
+            if (currentCollector instanceof InternalProfileCollector) {
+                collectors.offer(((InternalProfileCollector) currentCollector).getCollector());
+            } else if (currentCollector instanceof MinimumScoreCollector) {
+                collectors.offer(((MinimumScoreCollector) currentCollector).getCollector());
+            } else if(currentCollector instanceof MultiCollector) {
+                for (Collector innerCollector : ((MultiCollector) currentCollector).getCollectors()) {
                     collectors.offer(innerCollector);
                 }
-            } else if (collector instanceof BucketCollector) {
-                ((BucketCollector)collector).postCollection();
+            } else if (currentCollector instanceof BucketCollector) {
+                ((BucketCollector)currentCollector).postCollection();
             }
         }
     }
