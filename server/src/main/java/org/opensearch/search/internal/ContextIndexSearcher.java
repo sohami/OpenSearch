@@ -32,6 +32,8 @@
 
 package org.opensearch.search.internal;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -67,6 +69,7 @@ import org.opensearch.common.lucene.search.TopDocsAndMaxScore;
 import org.opensearch.common.lease.Releasable;
 import org.opensearch.search.DocValueFormat;
 import org.opensearch.search.SearchService;
+import org.opensearch.search.SearchStaticSettings;
 import org.opensearch.search.dfs.AggregatedDfs;
 import org.opensearch.search.profile.ContextualProfileBreakdown;
 import org.opensearch.search.profile.Timer;
@@ -81,6 +84,8 @@ import org.opensearch.search.sort.MinAndMax;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -93,6 +98,9 @@ import java.util.concurrent.Executor;
  * @opensearch.internal
  */
 public class ContextIndexSearcher extends IndexSearcher implements Releasable {
+
+    private static final Logger logger = LogManager.getLogger(ContextIndexSearcher.class);
+
     /**
      * The interval at which we check for search cancellation when we cannot use
      * a {@link CancellableBulkScorer}. See {@link #intersectScorerAndBitSet}.
@@ -436,6 +444,49 @@ public class ContextIndexSearcher extends IndexSearcher implements Releasable {
             return super.collectionStatistics(field);
         }
         return collectionStatistics;
+    }
+
+    @Override
+    protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
+        int target_segment_concurrency = SearchStaticSettings.getSettingValue();
+        LeafSlice[] leafSlices;
+        if (SearchStaticSettings.getSettingValue() == -1) {
+            logger.info("[Sorabh]: Target segment concurrency is -1, so falling back to lucene default value");
+            leafSlices = super.slices(leaves);
+            logger.info("[Sorabh]: Computed slices count: {}", leafSlices.length);
+        } else {
+            // concurrency should not exceed the segment count
+            target_segment_concurrency = Math.max(target_segment_concurrency, 1);
+            target_segment_concurrency = Math.min(target_segment_concurrency, leaves.size());
+            logger.info("[Sorabh]: Concurrent Search: Using target concurrency of: {}", target_segment_concurrency);
+
+            // Make a copy so we can sort:
+            List<LeafReaderContext> sortedLeaves = new ArrayList<>(leaves);
+
+            // Sort by maxDoc, descending:
+            Collections.sort(sortedLeaves, Collections.reverseOrder(Comparator.comparingInt(l -> l.reader().maxDoc())));
+
+            final List<List<LeafReaderContext>> groupedLeaves = new ArrayList<>();
+            for (int i = 0; i < target_segment_concurrency; ++i) {
+                groupedLeaves.add(new ArrayList<>());
+            }
+            List<LeafReaderContext> group;
+            for (int idx = 0; idx < sortedLeaves.size(); ++idx) {
+                int currentGroup = idx % target_segment_concurrency;
+                group = groupedLeaves.get(currentGroup);
+                group.add(sortedLeaves.get(idx));
+            }
+
+            LeafSlice[] slices = new LeafSlice[target_segment_concurrency];
+            int upto = 0;
+            for (List<LeafReaderContext> currentLeaf : groupedLeaves) {
+                slices[upto] = new LeafSlice(currentLeaf);
+                ++upto;
+            }
+            leafSlices = slices;
+            logger.info("[Sorabh]: Concurrent Search: Computed custom slices count: {}", leafSlices.length);
+        }
+        return leafSlices;
     }
 
     public DirectoryReader getDirectoryReader() {

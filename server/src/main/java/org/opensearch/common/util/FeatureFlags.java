@@ -63,6 +63,9 @@ public class FeatureFlags {
      */
     public static final String CONCURRENT_SEGMENT_SEARCH = "opensearch.experimental.feature.concurrent_segment_search.enabled";
 
+    public static final String CONCURRENT_SEGMENT_SEARCH_TARGET_MAX_SLICE =
+        "opensearch.experimental.feature.concurrent_segment_search.max_slice";
+
     /**
      * Gates the functionality of telemetry framework.
      */

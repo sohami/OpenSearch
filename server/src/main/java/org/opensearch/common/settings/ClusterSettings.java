@@ -45,6 +45,7 @@ import org.opensearch.index.SegmentReplicationPressureService;
 import org.opensearch.index.ShardIndexingPressureMemoryManager;
 import org.opensearch.index.ShardIndexingPressureSettings;
 import org.opensearch.index.ShardIndexingPressureStore;
+import org.opensearch.search.SearchStaticSettings;
 import org.opensearch.search.backpressure.settings.NodeDuressSettings;
 import org.opensearch.search.backpressure.settings.SearchBackpressureSettings;
 import org.opensearch.search.backpressure.settings.SearchShardTaskSettings;
@@ -657,7 +658,10 @@ public final class ClusterSettings extends AbstractScopedSettings {
 
                 // Related to monitoring of task cancellation
                 TaskCancellationMonitoringSettings.IS_ENABLED_SETTING,
-                TaskCancellationMonitoringSettings.DURATION_MILLIS_SETTING
+                TaskCancellationMonitoringSettings.DURATION_MILLIS_SETTING,
+
+                // Concurrent search setting
+                SearchStaticSettings.CONCURRENT_SEGMENT_SEARCH_SETTING
             )
         )
     );

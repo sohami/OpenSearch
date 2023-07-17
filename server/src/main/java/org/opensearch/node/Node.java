@@ -44,6 +44,7 @@ import org.opensearch.common.unit.ByteSizeValue;
 import org.opensearch.common.util.FeatureFlags;
 import org.opensearch.index.IndexModule;
 import org.opensearch.index.IndexingPressureService;
+import org.opensearch.search.SearchStaticSettings;
 import org.opensearch.tasks.TaskResourceTrackingService;
 import org.opensearch.threadpool.RunnableTaskExecutionListener;
 import org.opensearch.index.store.remote.filecache.FileCache;
@@ -468,6 +469,7 @@ public class Node implements Closeable {
 
             // Ensure to initialize Feature Flags via the settings from opensearch.yml
             FeatureFlags.initializeFeatureFlags(settings);
+            SearchStaticSettings.initializeSettings(settings);
 
             final List<IdentityPlugin> identityPlugins = new ArrayList<>();
             if (FeatureFlags.isEnabled(FeatureFlags.IDENTITY)) {
