@@ -451,11 +451,13 @@ public class ContextIndexSearcher extends IndexSearcher implements Releasable {
      */
     @Override
     public LeafSlice[] slices(List<LeafReaderContext> leaves) {
-        final int target_max_slices = SearchBootstrapSettings.getValueAsInt(
+        // For now using the static setting to get the targetMaxSlice value. It will be updated to dynamic mechanism as part of
+        // https://github.com/opensearch-project/OpenSearch/issues/8870 when lucene changes are available
+        final int targetMaxSlice = SearchBootstrapSettings.getValueAsInt(
             SearchBootstrapSettings.CONCURRENT_SEGMENT_SEARCH_TARGET_MAX_SLICE_COUNT_KEY,
             SearchBootstrapSettings.CONCURRENT_SEGMENT_SEARCH_TARGET_MAX_SLICE_COUNT_DEFAULT_VALUE
         );
-        return slicesInternal(leaves, target_max_slices);
+        return slicesInternal(leaves, targetMaxSlice);
     }
 
     public DirectoryReader getDirectoryReader() {
@@ -539,15 +541,15 @@ public class ContextIndexSearcher extends IndexSearcher implements Releasable {
     }
 
     // package-private for testing
-    LeafSlice[] slicesInternal(List<LeafReaderContext> leaves, int target_max_slices) {
+    LeafSlice[] slicesInternal(List<LeafReaderContext> leaves, int targetMaxSlice) {
         LeafSlice[] leafSlices;
-        if (target_max_slices <= 0) {
+        if (targetMaxSlice <= 0) {
             // use the default lucene slice calculation
             leafSlices = super.slices(leaves);
             logger.debug("Slice count using lucene default [{}]", leafSlices.length);
         } else {
             // use the custom slice calculation based on target_max_slices. It will sort
-            leafSlices = MaxTargetSliceSupplier.getSlices(leaves, target_max_slices);
+            leafSlices = MaxTargetSliceSupplier.getSlices(leaves, targetMaxSlice);
             logger.debug("Slice count using max target slice supplier [{}]", leafSlices.length);
         }
         return leafSlices;
