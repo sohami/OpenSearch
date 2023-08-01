@@ -501,6 +501,11 @@ public abstract class FilteredSearchContext extends SearchContext {
     }
 
     @Override
+    public boolean isConcurrentSegmentSearchEnabled() {
+        return in.isConcurrentSegmentSearchEnabled();
+    }
+
+    @Override
     public Map<Class<?>, CollectorManager<? extends Collector, ReduceableSearchResult>> queryCollectorManagers() {
         return in.queryCollectorManagers();
     }
@@ -558,5 +563,10 @@ public abstract class FilteredSearchContext extends SearchContext {
     @Override
     public BucketCollectorProcessor bucketCollectorProcessor() {
         return in.bucketCollectorProcessor();
+    }
+
+    @Override
+    public int getTargetMaxSliceCount() {
+        return in.getTargetMaxSliceCount();
     }
 }
