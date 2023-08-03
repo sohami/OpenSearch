@@ -1901,6 +1901,7 @@ public abstract class OpenSearchIntegTestCase extends OpenSearchTestCase {
      * In other words subclasses must ensure this method is idempotent.
      */
     protected Settings nodeSettings(int nodeOrdinal) {
+        final Settings featureFlagSettings = featureFlagSettings();
         Settings.Builder builder = Settings.builder()
             // Default the watermarks to absurdly low to prevent the tests
             // from failing on nodes without enough disk space
@@ -1917,7 +1918,12 @@ public abstract class OpenSearchIntegTestCase extends OpenSearchTestCase {
             .put(SearchService.LOW_LEVEL_CANCELLATION_SETTING.getKey(), randomBoolean())
             .putList(DISCOVERY_SEED_HOSTS_SETTING.getKey()) // empty list disables a port scan for other nodes
             .putList(DISCOVERY_SEED_PROVIDERS_SETTING.getKey(), "file")
-            .put(featureFlagSettings());
+            .put(featureFlagSettings);
+        if (FeatureFlags.CONCURRENT_SEGMENT_SEARCH_SETTING.get(featureFlagSettings)) {
+            // By default, for tests we will put the target slice count of 2. This will increase the probability of having multiple slices
+            // when tests are run with concurrent segment search enabled
+            builder.put(SearchService.CONCURRENT_SEGMENT_SEARCH_TARGET_MAX_SLICE_COUNT_KEY, 2);
+        }
         return builder.build();
     }
 

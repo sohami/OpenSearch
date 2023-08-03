@@ -52,6 +52,7 @@ import org.opensearch.index.shard.IndexShard;
 import org.opensearch.index.similarity.SimilarityService;
 import org.opensearch.search.RescoreDocIds;
 import org.opensearch.search.SearchExtBuilder;
+import org.opensearch.search.SearchService;
 import org.opensearch.search.SearchShardTarget;
 import org.opensearch.search.aggregations.Aggregator;
 import org.opensearch.search.aggregations.BucketCollectorProcessor;
@@ -471,4 +472,6 @@ public abstract class SearchContext implements Releasable {
     public abstract void setBucketCollectorProcessor(BucketCollectorProcessor bucketCollectorProcessor);
 
     public abstract BucketCollectorProcessor bucketCollectorProcessor();
+
+    public abstract int getTargetMaxSliceCount();
 }
