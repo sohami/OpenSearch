@@ -925,11 +925,20 @@ final class DefaultSearchContext extends SearchContext {
     }
 
     /**
-     * Evaluate based on cluster and index settings if concurrent segment search should be used for this request context
+     * Checks if concurrent segment search should not be used for certain request type. Otherwise, evaluates based on cluster and index
+     * settings if concurrent segment search should be used for this request context.
      * @return true: use concurrent search
      *         false: otherwise
      */
     private boolean useConcurrentSearch(Executor concurrentSearchExecutor) {
+        // Disable concurrent segment search if time-series based sort optimization can be applied on the index. This is done to avoid
+        // performance regression in such cases as segment order matters and most of the segments are skipped and not even evaluated for
+        // search. When concurrent segment search is used then order of the segments will be randomized and segments gets distributed across
+        // slices and unnecessary work will be done
+        if (indexShard.isTimeSeriesDescSortOptimizationEnabled()) {
+            return false;
+        }
+
         if (FeatureFlags.isEnabled(FeatureFlags.CONCURRENT_SEGMENT_SEARCH)
             && (clusterService != null)
             && (concurrentSearchExecutor != null)) {
