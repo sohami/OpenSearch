@@ -57,10 +57,11 @@ public class QueryPhaseSearcherWrapper implements QueryPhaseSearcher {
         boolean hasFilterCollector,
         boolean hasTimeout
     ) throws IOException {
-        if (searchContext.isConcurrentSegmentSearchEnabled()) {
+        if (useConcurrentPath(searchContext)) {
             LOGGER.info("Using concurrent search over segments (experimental)");
             return concurrentQueryPhaseSearcher.searchWith(searchContext, searcher, query, collectors, hasFilterCollector, hasTimeout);
         } else {
+            LOGGER.info("Using non-concurrent search");
             return defaultQueryPhaseSearcher.searchWith(searchContext, searcher, query, collectors, hasFilterCollector, hasTimeout);
         }
     }
@@ -72,11 +73,22 @@ public class QueryPhaseSearcherWrapper implements QueryPhaseSearcher {
      */
     @Override
     public AggregationProcessor aggregationProcessor(SearchContext searchContext) {
-        if (searchContext.isConcurrentSegmentSearchEnabled()) {
+        if (useConcurrentPath(searchContext)) {
             LOGGER.info("Using concurrent search over segments (experimental)");
             return concurrentQueryPhaseSearcher.aggregationProcessor(searchContext);
         } else {
+            LOGGER.info("Using non-concurrent search");
             return defaultQueryPhaseSearcher.aggregationProcessor(searchContext);
         }
+    }
+    private boolean useConcurrentPath(SearchContext context) {
+        // Disable concurrent segment search if time-series based sort optimization can be applied on the index. This is done to avoid
+        // performance regression in such cases as segment order matters and most of the segments are skipped and not even evaluated for
+        // search. When concurrent segment search is used then order of the segments will be randomized and segments gets distributed across
+        // slices and unnecessary work will be done
+        if (context.indexShard().isTimeSeriesDescSortOptimizationEnabled() && context.isSortOnTimeSeriesField()) {
+            return false;
+        }
+        return context.isConcurrentSegmentSearchEnabled();
     }
 }
