@@ -43,6 +43,7 @@ import org.apache.lucene.search.Query;
 import org.opensearch.Version;
 import org.opensearch.action.search.SearchShardTask;
 import org.opensearch.action.search.SearchType;
+import org.opensearch.cluster.metadata.DataStream;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.Nullable;
 import org.opensearch.common.lucene.search.Queries;
@@ -931,14 +932,6 @@ final class DefaultSearchContext extends SearchContext {
      *         false: otherwise
      */
     private boolean useConcurrentSearch(Executor concurrentSearchExecutor) {
-        // Disable concurrent segment search if time-series based sort optimization can be applied on the index. This is done to avoid
-        // performance regression in such cases as segment order matters and most of the segments are skipped and not even evaluated for
-        // search. When concurrent segment search is used then order of the segments will be randomized and segments gets distributed across
-        // slices and unnecessary work will be done
-        if (indexShard.isTimeSeriesDescSortOptimizationEnabled()) {
-            return false;
-        }
-
         if (FeatureFlags.isEnabled(FeatureFlags.CONCURRENT_SEGMENT_SEARCH)
             && (clusterService != null)
             && (concurrentSearchExecutor != null)) {
@@ -959,5 +952,18 @@ final class DefaultSearchContext extends SearchContext {
             throw new IllegalStateException("Target slice count should not be used when concurrent search is disabled");
         }
         return clusterService.getClusterSettings().get(SearchService.CONCURRENT_SEGMENT_SEARCH_TARGET_MAX_SLICE_COUNT_SETTING);
+    }
+
+    @Override
+    public boolean isSortOnTimeSeriesField() {
+        if (sort != null
+            && sort.sort != null
+            && sort.sort.getSort() != null
+            && sort.sort.getSort().length > 0
+            && sort.sort.getSort()[0].getField() != null
+            && sort.sort.getSort()[0].getField().equals(DataStream.TIMESERIES_FIELDNAME)) {
+            return true;
+        }
+        return false;
     }
 }

@@ -57,10 +57,11 @@ public class QueryPhaseSearcherWrapper implements QueryPhaseSearcher {
         boolean hasFilterCollector,
         boolean hasTimeout
     ) throws IOException {
-        if (searchContext.isConcurrentSegmentSearchEnabled()) {
-            LOGGER.info("Using concurrent search over segments (experimental)");
+        if (useConcurrentPath(searchContext)) {
+            LOGGER.debug("Using concurrent search over segments (experimental)");
             return concurrentQueryPhaseSearcher.searchWith(searchContext, searcher, query, collectors, hasFilterCollector, hasTimeout);
         } else {
+            LOGGER.debug("Using non-concurrent search");
             return defaultQueryPhaseSearcher.searchWith(searchContext, searcher, query, collectors, hasFilterCollector, hasTimeout);
         }
     }
@@ -78,5 +79,14 @@ public class QueryPhaseSearcherWrapper implements QueryPhaseSearcher {
         } else {
             return defaultQueryPhaseSearcher.aggregationProcessor(searchContext);
         }
+    }
+    private boolean useConcurrentPath(SearchContext context) {
+        // Disable concurrent segment search if time-series based sort optimization can be applied on the index. This is done to avoid
+        // performance regression in such cases as segment order matters and most of the segments are skipped and not even evaluated for
+        // search. When concurrent segment search is used then order of the segments will be randomized and segments gets distributed across
+        // slices and unnecessary work will be done
+        return context.isConcurrentSegmentSearchEnabled()
+            && context.indexShard().isTimeSeriesDescSortOptimizationEnabled()
+            && context.isSortOnTimeSeriesField();
     }
 }

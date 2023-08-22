@@ -524,13 +524,7 @@ public class ContextIndexSearcher extends IndexSearcher implements Releasable {
         // reader order here.
         if (searchContext.indexShard().isTimeSeriesDescSortOptimizationEnabled()) {
             // Only reverse order for asc order sort queries
-            if (searchContext.sort() != null
-                && searchContext.sort().sort != null
-                && searchContext.sort().sort.getSort() != null
-                && searchContext.sort().sort.getSort().length > 0
-                && searchContext.sort().sort.getSort()[0].getReverse() == false
-                && searchContext.sort().sort.getSort()[0].getField() != null
-                && searchContext.sort().sort.getSort()[0].getField().equals(DataStream.TIMESERIES_FIELDNAME)) {
+            if (searchContext.isSortOnTimeSeriesField() && searchContext.sort().sort.getSort()[0].getReverse() == false) {
                 return true;
             }
         }

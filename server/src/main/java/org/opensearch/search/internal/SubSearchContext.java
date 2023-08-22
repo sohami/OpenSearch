@@ -32,6 +32,7 @@
 package org.opensearch.search.internal;
 
 import org.apache.lucene.search.Query;
+import org.opensearch.cluster.metadata.DataStream;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.index.query.ParsedQuery;
 import org.opensearch.search.aggregations.SearchContextAggregations;
@@ -363,5 +364,18 @@ public class SubSearchContext extends FilteredSearchContext {
     @Override
     public long getRelativeTimeInMillis() {
         throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public boolean isSortOnTimeSeriesField() {
+        if (sort != null
+            && sort.sort != null
+            && sort.sort.getSort() != null
+            && sort.sort.getSort().length > 0
+            && sort.sort.getSort()[0].getField() != null
+            && sort.sort.getSort()[0].getField().equals(DataStream.TIMESERIES_FIELDNAME)) {
+            return true;
+        }
+        return false;
     }
 }
