@@ -38,9 +38,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static org.opensearch.index.query.QueryBuilders.scriptQuery;
-import static org.opensearch.search.SearchBootstrapSettings.CONCURRENT_SEGMENT_SEARCH_TARGET_MAX_SLICE_COUNT_KEY;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
+import static org.opensearch.search.SearchService.CONCURRENT_SEGMENT_SEARCH_TARGET_MAX_SLICE_COUNT_KEY;
 
 @OpenSearchIntegTestCase.ClusterScope(scope = OpenSearchIntegTestCase.Scope.TEST, numDataNodes = 1, numClientNodes = 0, supportsDedicatedMasters = false)
 public class ConcurrentSearchStatsIT extends OpenSearchIntegTestCase {
