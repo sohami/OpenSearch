@@ -1,0 +1,20 @@
+name: Sync labels
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Synchronize labels
+        uses: julbme/gh-action-manage-label@v1
+        with:
+          from: https://github.com/sohami/.github/tree/main/.github/config/labels.yml
+          skip_delete: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
